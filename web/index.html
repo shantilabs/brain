@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Прокачка мозга</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #eee;
+        color: #000;
+        height: 800px;
+    }
+    .screen {
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        display: none;
+        position: relative;
+    }
+    .screen p {
+        position: absolute;
+        text-align: center;
+        margin: 0 auto;
+    }
+    #text {
+        width: 50em;
+        border: solid 1px #ddd;
+        margin: 0 auto 3em;
+        display: block;
+        font-family: monospace;
+        white-space: pre;
+        font-size: 120%;
+        overflow-y: scroll;
+        height: 25em;
+        border: solid 1px #ddd;
+        padding: 12em 1em 2em 1em;
+    }
+    .box {
+        position: absolute;
+        text-align: center;
+    }
+    .screen.reader {
+        position: relative;
+    }
+    .screen.reader .vline {
+        border-left: solid 1px #c1e37c;
+        height: 38.2em;
+        position: absolute;
+        top: 4em;
+        left: 48%;
+    }
+    .screen.reader .box {
+        position: static;
+        text-align: left;
+        padding-top: 4em;
+        margin: 0 auto;
+        display: table;
+    }
+    .stroop .box,
+    .handsfoots .box,
+    .hands .box {
+        font-size: 540%;
+    }
+    .menu {
+        padding-left: 1em;
+        margin: .2em 0;
+        height: 1.3em;
+    }
+    .menu li {
+        list-style: none;
+        display: inline;
+        margin-right: .3em;
+        font-family: sans-serif;
+    }
+    .menu .controls {
+        float: right;
+        font-size: 90%;
+        position: relative;
+        top: -.15em;
+    }
+    .menu .controls,
+    .menu .controls a {
+        color: #999;
+    }
+    .menu .controls .note {
+        color: darkgreen;
+    }
+    li a {
+        color: #00A6C7;
+        margin-left: .75em;
+    }
+    li.controls a {
+        margin-left: 0;
+    }
+    .active a {
+        color: #ee5f5b;
+    }
+    .warn {
+        color: red;
+        background: yellow;
+    }
+    table.shulte {
+        border-collapse: collapse;
+        position: relative;
+        top: 10%;
+        margin: 0 auto;
+    }
+    table.shulte td {
+        font-size: 250%;
+        text-align: center;
+        border: solid 1px #ccc;
+        padding: .75em 1.2em;
+        position: relative;
+        font-family: sans-serif;
+    }
+    table.shulte td small {
+        font-size: 55%;
+        position: absolute;
+        bottom: .1em;
+        right: .4em;
+    }
+    .shulte-auto td.active {
+        color: red;
+        background: #ffffaa;
+    }
+    .shulte-plus .shulte td {
+        font-size: 210%;
+    }
+</style>
+<script src="jquery.min.js"></script>
+<script src="jquery.cookie.js"></script>
+<script>
+function choice(seq) {
+    return seq[Math.round(Math.random() * (seq.length - 1))];
+}
+
+function randint(min, max) {
+    return min + Math.round(Math.random() * (max - min));
+}
+
+$(function() {
+    var 
+        defaultPause = 0.9,
+        minPause = 0.1,
+        maxPause = 3.0,
+        voiceLetters ='ЙЦУКЕНГШЩЗХФЫВАПРОЛДЖЭЯЧСМИТБЮЁ'.split(''),
+        handLetters = 'ЛПО'.split(''),
+        colorLabels = 'Синий,Красный,Белый,Голубой,Серый,Чёрный,Жёлтый,Зелёный,ХЛОПОК'.split(','),
+        colorStyles = 'blue,red,black,yellow,green,gray'.split(','),
+        $a = $('.menu a').click(function() {
+            activateTab(this.hash);
+        }),
+        $pause = $('#pause'),
+        $text = $('#text'),
+        defaultText = 'Сюда надо\nвставить текст...',
+        activateTab = function(hash) {
+            hash = hash.slice(1);
+            $('.menu li').removeClass('active');
+            var $curLink = $('.menu a[href="#' + hash + '"]');
+            $curLink.parent().addClass('active');
+            $('.screen, .screen-controls').hide();
+            $('.screen.' + hash + ', .screen-controls.' + hash).show().click();
+            document.title = $curLink.text();
+        },
+        getPause = function() {
+            var pause = parseFloat($.trim($pause.val().replace(',', '.'))) || 0;
+            $pause.removeClass('warn');
+            if (pause > maxPause) {
+                pause = maxPause;
+                $pause.addClass('warn');
+            } else if (pause < minPause) {
+                pause = minPause;
+                $pause.addClass('warn');
+            } else {
+                if ($pause.val() != pause) {
+                    $pause.val(pause);
+                }
+                $.cookie('pause', pause, {expires: 1024});
+            }
+            return pause * 1000;
+        },
+        fillShulte = function($table, subs) {
+            var $td = $table.find('td').text('').addClass('empty');
+            for (var i = 1, text; i <= $td.length; i++) {
+                $(choice($table.find('td.empty')))
+                    .html(subs ? (i + ' <small></small>') : i)
+                    .removeClass()
+                    .addClass('n' + i);
+            }
+            if (subs) {
+                for (var j = 1; j <= $td.length; j++) {
+                    $(choice($table.find('small:empty'))).text(j);
+                }
+            }
+        },
+        shulteGen = function(mode) {
+            var $screen = $('.screen.shulte-gen');
+            fillShulte($screen.find('table'));
+            if (mode == 'init') {
+                $screen.click(shulteGen);
+            }
+        },
+        shultePlus = function(mode) {
+            var $screen = $('.screen.shulte-plus');
+            fillShulte($screen.find('table'), true);
+            if (mode == 'init') {
+                $screen.click(shultePlus);
+            }
+        },
+        handsTick = function() {
+            var $screen = $('.screen.hands');
+            $screen.find('.voice').html(choice(voiceLetters));
+            $screen.find('.hand').html(choice(handLetters));
+            $screen.find('.box').css({
+                left: randint(1, 90) + '%',
+                top: randint(1, 70) + '%'
+            })
+        },
+        handsFootsTick = function() {
+            var $screen = $('.screen.handsfoots');
+            $screen.find('.voice').html(choice(voiceLetters));
+            $screen.find('.hand').html(choice(handLetters));
+            $screen.find('.foot').html(choice(handLetters));
+            $screen.find('.box').css({
+                left: randint(1, 90) + '%',
+                top: randint(1, 60) + '%'
+            })
+        },
+        stroopTick = function() {
+            var $screen = $('.screen.stroop');
+            $screen.find('.box').text(choice(colorLabels)).css({
+                left: randint(1, 70) + '%',
+                top: randint(1, 70) + '%',
+                color: choice(colorStyles)
+            })
+        },
+        shulteAutoTick = function(mode) {
+            var $screen = $('.screen.shulte-auto'),
+                $table = $screen.find('table'),
+                $active = $table.find('.active'),
+                $td = $table.find('td');
+            if ($active.length == 0 || $active.text == $td.length) {
+                fillShulte($table);
+                $table.find('td.n1').addClass('active')
+            } else {
+                $active.removeClass('active');
+                $table.find('td.n' + (parseInt($active.text()) + 1)).addClass('active');
+            }
+            if (mode == 'init') {
+                $screen.click(function() {
+                    $table.find('td').removeClass('active');
+                });
+            }
+        },
+        textScrollTick = function(h) {
+            if (h) return;
+            $text.animate({
+                scrollTop: '+=15'
+            }, 10);
+//            $textScroll.text(localStorage['text']);
+        };
+
+    shulteGen('init');
+    shultePlus('init');
+
+    $text.text(localStorage['text'] || defaultText)
+         .keyup(function() {
+             if (this.value != localStorage['text']) {
+                 localStorage['text'] = this.value;
+             }
+         });
+    $('#vline-switcher').change(function() {
+        $.cookie('vline-switcher', this.checked ? '1': '0');
+        $('.vline').toggle(this.checked);
+    }).attr('checked', $.cookie('vline-switcher') == '1').change();
+
+    $pause.val($.cookie('pause') || defaultPause);
+    activateTab(document.location.hash || '#hands');
+
+    $.each([
+        handsTick,
+        handsFootsTick,
+        stroopTick,
+        shulteAutoTick,
+        textScrollTick
+    ], function(i, func) {
+        var handler, f = function(arg) {
+            func(arg);
+            handler = window.setTimeout(f, getPause());
+        };
+        f('init');
+    });
+
+});
+var _gaq = _gaq || [];
+_gaq.push(['_setAccount', 'UA-3710975-28']);
+_gaq.push(['_trackPageview']);
+(function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+})();
+</script>
+</head>
+<body>
+    <ul class="menu">
+        <li><strong>Прокачка мозга</strong></li>
+        <li><a href="#hands">Алфавит</a></li>
+        <li><a href="#handsfoots">Алфавит+</a></li>
+        <li><a href="#stroop">Радуга</a></li>
+        <li><a href="#shulte-auto">Шульте (авто)</a></li>
+        <li><a href="#shulte-gen">Шульте</a></li>
+        <li><a href="#shulte-plus">Шульте+</a></li>
+        <!-- <li><a href="#reader">Читалка</a></li> -->
+        <li class="controls">
+            <span class="screen-controls reader">
+                <label for="vline-switcher"><input type="checkbox" id="vline-switcher"> линия</label>
+                &nbsp;
+            </span>
+            <span class="screen-controls hands handsfoots stroop reader shulte-auto">
+                пауза <input type="text" value="" id="pause" size="1"> сек.
+                &nbsp;
+            </span>
+            <span class="screen-controls shulte-auto note">
+                кликните по таблице, чтобы начать с начала
+                &nbsp;
+            </span>
+            <span class="screen-controls reader note">
+                много текстов есть в <a href="http://lib.ru/" target="_blank">Библиотеке Мошкова</a>
+                &nbsp;
+            </span>
+            <span class="screen-controls shulte-gen shulte-plus note" style="line-height: 1.7">
+                кликните по таблице, чтобы сгенерировать новую
+                &nbsp;
+            </span>
+            <a href="https://vk.com/smee_again" target="_blank">связь</a>
+        </li>
+    </ul>
+    <div class="screen hands">
+        <div class="box">
+            <div class="voice"></div>
+            <div class="hand"></div>
+        </div>
+    </div>
+    <div class="screen handsfoots">
+        <div class="box">
+            <div class="voice"></div>
+            <div class="hand"></div>
+            <div class="foot"></div>
+        </div>
+    </div>
+    <div class="screen stroop">
+        <div class="box"></div>
+    </div>
+    <div class="screen shulte-auto">
+        <table class="shulte">
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+        </table>
+    </div>
+    <div class="screen shulte-gen">
+        <table class="shulte">
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+        </table>
+    </div>
+    <div class="screen shulte-plus">
+        <table class="shulte">
+            <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        </table>
+    </div>
+    <div class="screen reader">
+        <div class="box">
+            <div class="vline"></div>
+            <textarea id="text"></textarea>
+        </div>
+    </div>
+</body>
+</html>
